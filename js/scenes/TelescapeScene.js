@@ -61,36 +61,36 @@ class TelescapeScene extends Phaser.Scene {
                 impactTime: Phaser.Math.RND.between(8, 20),
                 maxImpactTime: 0,
                 status: 'detected',
-                graphics: null,
-                impactTimer: null,
+                sprite: null,
                 impactText: null,
                 buttons: null
             };
 
             asteroid.maxImpactTime = asteroid.impactTime;
-            this.createAsteroidGraphics(asteroid);
+            this.createAsteroidSprite(asteroid);
             this.asteroidsInScene.push(asteroid);
         }
     }
 
-    createAsteroidGraphics(asteroid) {
+    createAsteroidSprite(asteroid) {
         const sizeMap = { small: 15, medium: 25, large: 35 };
         const radius = sizeMap[asteroid.size];
-        const threatColor = asteroid.size === 'large' ? '#ff4444' : asteroid.size === 'medium' ? '#ffaa00' : '#ffff00';
+        const threatColor = asteroid.size === 'large' ? 0xff4444 : asteroid.size === 'medium' ? 0xffaa00 : 0xffff00;
 
-        // Create graphics object
-        const graphics = this.add.graphics();
-        graphics.fillStyle(Phaser.Display.Color.HexStringToColor(threatColor).color);
-        graphics.fillCircle(0, 0, radius);
-        
-        // Create a container to hold the graphics at the correct position
-        const container = this.add.container(asteroid.x, asteroid.y, graphics);
-        container.setInteractive(new Phaser.Geom.Circle(0, 0, radius), Phaser.Geom.Circle.Contains);
-        container.on('pointerdown', () => this.selectAsteroid(asteroid));
-        container.depth = 10;
+        // Create a simple circle sprite using graphics
+        const graphics = this.make.graphics({ x: 0, y: 0, add: false });
+        graphics.fillStyle(threatColor, 1);
+        graphics.fillCircle(radius, radius, radius);
+        graphics.generateTexture('asteroid_' + asteroid.id, radius * 2, radius * 2);
+        graphics.destroy();
 
-        asteroid.graphics = graphics;
-        asteroid.container = container;
+        // Create sprite from the generated texture
+        const sprite = this.add.sprite(asteroid.x, asteroid.y, 'asteroid_' + asteroid.id);
+        sprite.setInteractive();
+        sprite.on('pointerdown', () => this.selectAsteroid(asteroid));
+        sprite.depth = 10;
+
+        asteroid.sprite = sprite;
         asteroid.radius = radius;
     }
 
@@ -105,7 +105,7 @@ class TelescapeScene extends Phaser.Scene {
         this.selectedAsteroid = asteroid;
         asteroid.status = 'defending';
 
-        asteroid.graphics.setStrokeStyle(3, 0x00ff00);
+        asteroid.sprite.setStrokeStyle(3, 0x00ff00);
 
         const buttonY = asteroid.y + 80;
         const buttonWidth = 100;
@@ -173,8 +173,7 @@ class TelescapeScene extends Phaser.Scene {
     }
 
     cleanupAsteroid(asteroid) {
-        asteroid.graphics.destroy();
-        asteroid.container.destroy();
+        asteroid.sprite.destroy();
         if (asteroid.buttons) {
             asteroid.buttons.blast.destroy();
             asteroid.buttons.deflect.destroy();
@@ -212,7 +211,7 @@ class TelescapeScene extends Phaser.Scene {
 
     deselectAsteroid() {
         if (this.selectedAsteroid) {
-            this.selectedAsteroid.graphics.setStrokeStyle(0);
+            this.selectedAsteroid.sprite.setStrokeStyle(0);
             if (this.selectedAsteroid.buttons) {
                 this.selectedAsteroid.buttons.blast.destroy();
                 this.selectedAsteroid.buttons.deflect.destroy();
@@ -259,7 +258,7 @@ class TelescapeScene extends Phaser.Scene {
 
                 if (asteroid.impactTime <= 0) {
                     asteroid.impactText.setText('IMPACT!');
-                    asteroid.graphics.setFillStyle(0x000000);
+                    asteroid.sprite.setFillStyle(0x000000);
                     this.time.delayedCall(2000, () => this.gameOver());
                 }
             }
