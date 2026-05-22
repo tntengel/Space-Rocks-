@@ -78,15 +78,19 @@ class TelescapeScene extends Phaser.Scene {
         const radius = sizeMap[asteroid.size];
         const threatColor = asteroid.size === 'large' ? '#ff4444' : asteroid.size === 'medium' ? '#ffaa00' : '#ffff00';
 
-        // Create circle using sprite with graphics
+        // Create graphics object
         const graphics = this.add.graphics();
         graphics.fillStyle(Phaser.Display.Color.HexStringToColor(threatColor).color);
-        graphics.fillCircle(asteroid.x, asteroid.y, radius);
-        graphics.setInteractive(new Phaser.Geom.Circle(asteroid.x, asteroid.y, radius), Phaser.Geom.Circle.Contains);
-        graphics.on('pointerdown', () => this.selectAsteroid(asteroid));
-        graphics.depth = 10;
+        graphics.fillCircle(0, 0, radius);
+        
+        // Create a container to hold the graphics at the correct position
+        const container = this.add.container(asteroid.x, asteroid.y, graphics);
+        container.setInteractive(new Phaser.Geom.Circle(0, 0, radius), Phaser.Geom.Circle.Contains);
+        container.on('pointerdown', () => this.selectAsteroid(asteroid));
+        container.depth = 10;
 
         asteroid.graphics = graphics;
+        asteroid.container = container;
         asteroid.radius = radius;
     }
 
@@ -170,6 +174,7 @@ class TelescapeScene extends Phaser.Scene {
 
     cleanupAsteroid(asteroid) {
         asteroid.graphics.destroy();
+        asteroid.container.destroy();
         if (asteroid.buttons) {
             asteroid.buttons.blast.destroy();
             asteroid.buttons.deflect.destroy();
@@ -225,7 +230,7 @@ class TelescapeScene extends Phaser.Scene {
 
         this.asteroidsInScene.forEach(asteroid => {
             if (asteroid.status === 'detected' || asteroid.status === 'defending') {
-                asteroid.impactTime -= this.game.loop.delta / 1000;
+                asteroid.impactTime -= this.game.loop.deltaMS / 1000;
 
                 if (!asteroid.impactText) {
                     asteroid.impactText = this.add.text(
