@@ -78,10 +78,11 @@ class TelescapeScene extends Phaser.Scene {
         const radius = sizeMap[asteroid.size];
         const threatColor = asteroid.size === 'large' ? '#ff4444' : asteroid.size === 'medium' ? '#ffaa00' : '#ffff00';
 
-        const graphics = this.make.graphics({ x: asteroid.x, y: asteroid.y, add: false });
+        // Create circle using sprite with graphics
+        const graphics = this.add.graphics();
         graphics.fillStyle(Phaser.Display.Color.HexStringToColor(threatColor).color);
-        graphics.fillCircle(0, 0, radius);
-        graphics.setInteractive(new Phaser.Geom.Circle(0, 0, radius), Phaser.Geom.Circle.Contains);
+        graphics.fillCircle(asteroid.x, asteroid.y, radius);
+        graphics.setInteractive(new Phaser.Geom.Circle(asteroid.x, asteroid.y, radius), Phaser.Geom.Circle.Contains);
         graphics.on('pointerdown', () => this.selectAsteroid(asteroid));
         graphics.depth = 10;
 
