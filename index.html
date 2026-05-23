@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Space Rocks - Asteroid Defense Game</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
     <style>
@@ -19,27 +22,19 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 10px;
+            padding: 0;
+            overflow: hidden;
         }
         #game {
-            max-width: 100%;
-        }
-        h1 {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            text-align: center;
-            font-size: 28px;
+            width: 100%;
+            height: 100%;
         }
     </style>
 </head>
 <body>
-    <h1>🌍 SPACE ROCKS - Asteroid Defense 🚀</h1>
     <div id="game"></div>
-    <script src="js/scenes/TelescapeScene.js"></script>
-    <script src="js/scenes/DefenseScene.js"></script>
-    <script src="js/game.js"></script>
+    <script src="js/scenes/TelescapeScene.js?v=2"></script>
+    <script src="js/scenes/DefenseScene.js?v=2"></script>
+    <script src="js/game.js?v=2"></script>
 </body>
 </html>
