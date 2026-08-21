@@ -20,8 +20,11 @@ backend and deploy it.
   policy decision below; this classifier enforces a ban, it doesn't gate an
   allowed category
 - **Copyright:** DMCA agent info to be added to a public footer/page once registered
-- **Payments (creator plans, Verified Critic subscription):** Stripe. No
-  adult-content-capable processor (CCBill/Segpay) is needed — see below.
+- **Payments** (creator plans, Verified Critic subscription, one-time tips,
+  recurring Superfan subscriptions, platform donations): Stripe — one-time
+  charges for tips/donations, Stripe Billing/subscriptions for Creator/Pro
+  plans, Verified Critic, and Superfan. No adult-content-capable processor
+  (CCBill/Segpay) is needed — see the content policy section below.
 
 ## Data model
 
@@ -49,6 +52,23 @@ trigger (server-side 13+ enforcement) and notification fan-out.
 - **support_requests** (support/report/appeal tickets; users can read/file
   their own, status changes are a moderation action via the service role,
   not user-editable)
+
+**0003_support_and_tips.sql** — creator support, separate from the plan
+tiers (which is what a *creator* pays for hosting capacity — tips/Superfan
+are what a *viewer* pays a creator directly):
+- `channels.superfan_price_cents` — nullable; a creator sets their own
+  monthly Superfan price, or leaves it unset to keep that feature off
+- **tips** table (channel_id, from_user_id, amount_cents, message) —
+  one-time, publicly readable (shown as a "supporters" list on the channel)
+- **superfan_subscriptions** table — recurring; `price_cents_at_signup` is
+  always snapshotted server-side from the channel's *current* price by a
+  trigger (never trusted from the client, and doesn't retroactively change
+  if the creator later changes their price); a partial unique index allows
+  only one `active` subscription per (channel, user) at a time while
+  preserving history across cancel/re-subscribe
+- **platform_donations** table (from_user_id, amount_cents) — the nav bar's
+  "Support Home Planet TV" button; not tied to a channel, kept private to
+  the donor (no public leaderboard)
 
 All new tables have RLS enabled with policies matching the existing pattern:
 public read where the prototype shows the data to everyone (ratings, posts),
@@ -95,6 +115,10 @@ real uploads instead of a client-side probe.
 - [ ] Creator analytics (views/ratings/comments/followers + bar chart)
 - [ ] Creator plan tiers (Free/Creator/Pro) with real upload-length enforcement
 - [ ] Verified Critic subscription tier
+- [ ] Creator support: one-time tips (nav-free, per channel), recurring
+      Superfan subscriptions (creator sets their own price), and a nav-level
+      "Support Home Planet TV" platform donation — schema ready in
+      `0003_support_and_tips.sql`, UI wired, reads/writes mock data
 - [ ] Help Center: Support/Report/Appeal with visible request history
 - [ ] Account settings: data export (works, client-side only), account
       deletion (currently local-only — needs a server-side function, since
@@ -129,9 +153,9 @@ happens — `channels.plan` is a plain text column (`supabase/migrations/
 
 ## Build order
 
-1. **Supabase project**: create a project, run `0001_init_schema.sql` then
-   `0002_creator_features.sql` in order. Copy `.env.example` to `.env` with
-   the project URL + anon key.
+1. **Supabase project**: create a project, run `0001_init_schema.sql`,
+   `0002_creator_features.sql`, then `0003_support_and_tips.sql`, in order.
+   Copy `.env.example` to `.env` with the project URL + anon key.
 2. **Cloudflare Stream integration** (upload, storage, playback) — real trim
    enforcement and real quality tiers happen here, not just client-side.
    Resolve the trim/billing question above as part of this step.
@@ -144,8 +168,9 @@ happens — `channels.plan` is a plain text column (`supabase/migrations/
    mock state (feed, posts, messages, ratings UI, plan changes, support
    requests) for Supabase queries — component structure/styling carries over
    directly.
-6. **Payments**: integrate Stripe for plan tiers and the Verified Critic
-   subscription.
+6. **Payments**: integrate Stripe for plan tiers, the Verified Critic
+   subscription, one-time tips, Superfan subscriptions, and platform
+   donations.
 7. **Account deletion**: a Supabase Edge Function with the service role key,
    since the anon key the browser uses can't delete an `auth.users` row.
 8. **Deploy to Vercel**, connect a domain, set env vars.
@@ -154,7 +179,8 @@ happens — `channels.plan` is a plain text column (`supabase/migrations/
 ## What's still mocked
 
 Sign-up/sign-in/sign-out are real. Everything else — feed, channels, posts/
-polls, messages, live streaming, ratings/critic scores, creator plans,
-support requests, and uploads — still reads/writes local mock state in
-`src/Platform.jsx` and doesn't survive a page reload. The schema above is
-ready for all of it; wiring the UI to it is build-order step 5.
+polls, messages, live streaming, ratings/critic scores, creator plans, tips/
+Superfan/platform donations, support requests, and uploads — still
+reads/writes local mock state in `src/Platform.jsx` and doesn't survive a
+page reload. The schema above is ready for all of it; wiring the UI to it is
+build-order step 5.

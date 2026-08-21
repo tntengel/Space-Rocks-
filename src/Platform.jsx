@@ -13,6 +13,11 @@ const seedChannels = [
     bannerUrl: null,
     followers: 4200,
     plan: "creator",
+    superfanPrice: 4.99,
+    superfans: ["@rosam"],
+    tips: [
+      { id: "t1", from: "@devnair", amount: 5, message: "Loved the market tour!", time: "3 days ago" },
+    ],
     posts: [
       { id: "p1", type: "poll", question: "What should I film next?", options: [
         { text: "Street breakfast tour", votes: 41 },
@@ -35,6 +40,9 @@ const seedChannels = [
     bannerUrl: null,
     followers: 1800,
     plan: "free",
+    superfanPrice: null,
+    superfans: [],
+    tips: [],
     posts: [],
     videos: [
       { id: "v3", title: "Why nobody covers this story", views: 8100, time: "5 hours ago", durationSec: 480, filter: "none", avgRating: 3.9, ratingCount: 156, criticAvgRating: 0, criticRatingCount: 0, myRating: null, comments: [
@@ -51,6 +59,12 @@ const seedChannels = [
     bannerUrl: null,
     followers: 9600,
     plan: "pro",
+    superfanPrice: 7.99,
+    superfans: ["@amara", "@devnair"],
+    tips: [
+      { id: "t2", from: "@amara", amount: 10, message: "This saved my weekend, thank you!", time: "1 week ago" },
+      { id: "t3", from: "@devnair", amount: 3, message: "", time: "3 weeks ago" },
+    ],
     posts: [],
     videos: [
       { id: "v4", title: "Fixing a leaking tap in 4 minutes", views: 91000, time: "3 weeks ago", durationSec: 258, filter: "none", avgRating: 4.9, ratingCount: 2100, criticAvgRating: 4.6, criticRatingCount: 34, myRating: null, comments: [
@@ -307,6 +321,9 @@ export default function Platform() {
   const [showSignup, setShowSignup] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCriticUpgrade, setShowCriticUpgrade] = useState(false);
+  const [showPlatformSupport, setShowPlatformSupport] = useState(false);
+  const [tipTarget, setTipTarget] = useState(null); // channelId, or null when the tip modal is closed
+  const [superfanTarget, setSuperfanTarget] = useState(null); // channelId, or null when the superfan modal is closed
   const [reportPrefill, setReportPrefill] = useState(null);
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
@@ -327,7 +344,7 @@ export default function Platform() {
       }
       try {
         const profile = await loadUserProfile(authUser.id);
-        setUser({ ...profile, isCritic: false, conversations: [], supportRequests: [] });
+        setUser({ ...profile, isCritic: false, conversations: [], supportRequests: [], superfanOf: [] });
         setShowSignup(false);
         setSignupStage("form");
         // The feed/channel data is still a local mock array (see
@@ -339,7 +356,7 @@ export default function Platform() {
           cs.some((c) => c.id === profile.channelId)
             ? cs
             : [
-                { id: profile.channelId, name: profile.name, handle: profile.handle, tagline: "New voice on Home Planet TV", videos: [], posts: [], avatarUrl: null, bannerUrl: null, plan: "free", followers: 0 },
+                { id: profile.channelId, name: profile.name, handle: profile.handle, tagline: "New voice on Home Planet TV", videos: [], posts: [], tips: [], superfans: [], superfanPrice: null, avatarUrl: null, bannerUrl: null, plan: "free", followers: 0 },
                 ...cs,
               ]
         );
@@ -379,6 +396,35 @@ export default function Platform() {
     const isFollowing = (user.following || []).includes(channelId);
     setUser((u) => ({ ...u, following: isFollowing ? u.following.filter((id) => id !== channelId) : [...(u.following || []), channelId] }));
     setChannels((cs) => cs.map((c) => (c.id === channelId ? { ...c, followers: (c.followers || 0) + (isFollowing ? -1 : 1) } : c)));
+  };
+
+  const sendTip = (channelId, amount, message) => {
+    if (!user || !(amount > 0)) return;
+    setChannels((cs) =>
+      cs.map((c) =>
+        c.id !== channelId
+          ? c
+          : { ...c, tips: [{ id: "t" + Date.now(), from: user.handle, amount, message: message.trim(), time: "just now" }, ...(c.tips || [])] }
+      )
+    );
+  };
+
+  const toggleSuperfan = (channelId) => {
+    if (!user) return;
+    const isSuperfan = (user.superfanOf || []).includes(channelId);
+    setUser((u) => ({ ...u, superfanOf: isSuperfan ? u.superfanOf.filter((id) => id !== channelId) : [...(u.superfanOf || []), channelId] }));
+    setChannels((cs) =>
+      cs.map((c) =>
+        c.id !== channelId
+          ? c
+          : { ...c, superfans: isSuperfan ? (c.superfans || []).filter((h) => h !== user.handle) : [...(c.superfans || []), user.handle] }
+      )
+    );
+  };
+
+  const supportPlatform = (amount) => {
+    if (!user || !(amount > 0)) return;
+    pushNotification(`Thanks for supporting Home Planet TV with a $${amount} donation!`);
   };
 
   const REPLY_LINES = [
@@ -584,6 +630,7 @@ export default function Platform() {
         onGoLive={() => setView("live")}
         onSignIn={() => setShowSignup(true)}
         onSignOut={handleSignOut}
+        onSupportPlatform={() => setShowPlatformSupport(true)}
       />
 
       {view === "landing" && (
@@ -619,6 +666,12 @@ export default function Platform() {
           onReport={() => {
             setReportPrefill({ type: "report", subject: `Channel: ${activeChannel.name} (${activeChannel.handle})` });
             setView("help");
+          }}
+          onTip={() => (user ? setTipTarget(activeChannel.id) : setShowSignup(true))}
+          onToggleSuperfan={() => {
+            if (!user) { setShowSignup(true); return; }
+            if ((user.superfanOf || []).includes(activeChannel.id)) toggleSuperfan(activeChannel.id);
+            else setSuperfanTarget(activeChannel.id);
           }}
         />
       )}
@@ -771,13 +824,36 @@ export default function Platform() {
           onConfirm={() => { upgradeToCritic(); setShowCriticUpgrade(false); }}
         />
       )}
+
+      {showPlatformSupport && (
+        <PlatformSupportModal
+          onClose={() => setShowPlatformSupport(false)}
+          onSubmit={(amount) => supportPlatform(amount)}
+        />
+      )}
+
+      {tipTarget && (
+        <TipModal
+          channel={channels.find((c) => c.id === tipTarget)}
+          onClose={() => setTipTarget(null)}
+          onSubmit={(amount, message) => sendTip(tipTarget, amount, message)}
+        />
+      )}
+
+      {superfanTarget && (
+        <SuperfanModal
+          channel={channels.find((c) => c.id === superfanTarget)}
+          onClose={() => setSuperfanTarget(null)}
+          onConfirm={() => { toggleSuperfan(superfanTarget); setSuperfanTarget(null); }}
+        />
+      )}
     </div>
   );
 }
 
 // ---------- pieces ----------
 
-function NavBar({ user, notifications, unreadCount, showNotifications, onToggleNotifications, onCloseNotifications, onHome, onFeed, onGuidelines, onHelp, onPricing, onMission, onUpload, onDashboard, onMessages, onGoLive, onSignIn, onSignOut }) {
+function NavBar({ user, notifications, unreadCount, showNotifications, onToggleNotifications, onCloseNotifications, onHome, onFeed, onGuidelines, onHelp, onPricing, onMission, onUpload, onDashboard, onMessages, onGoLive, onSignIn, onSignOut, onSupportPlatform }) {
   return (
     <div style={styles.nav}>
       {showNotifications && <div style={styles.notifOverlay} onClick={onCloseNotifications} />}
@@ -793,6 +869,7 @@ function NavBar({ user, notifications, unreadCount, showNotifications, onToggleN
           <button style={styles.navLink} onClick={onHelp}>Help</button>
           <button style={styles.navLink} onClick={onPricing}>Pricing</button>
           <button style={styles.navLink} onClick={onMission}>Mission</button>
+          <button style={styles.supportBtn} onClick={onSupportPlatform}>💛 Support HPTV</button>
           {user ? (
             <>
               <button style={styles.navLink} onClick={onDashboard}>My channel</button>
@@ -959,10 +1036,12 @@ function Feed({ channels, canViewAdult, searchQuery, onSearchChange, onOpenVideo
   );
 }
 
-function ChannelPage({ channel, canViewAdult, onBack, onOpenVideo, user, onToggleFollow, onNeedSignup, onVotePoll, onMessage, onReport }) {
+function ChannelPage({ channel, canViewAdult, onBack, onOpenVideo, user, onToggleFollow, onNeedSignup, onVotePoll, onMessage, onReport, onTip, onToggleSuperfan }) {
   const videos = channel.videos.filter((v) => !v.isAdult || canViewAdult);
   const isOwn = user?.channelId === channel.id;
   const isFollowing = (user?.following || []).includes(channel.id);
+  const isSuperfan = (user?.superfanOf || []).includes(channel.id);
+  const tips = channel.tips || [];
   return (
     <div style={styles.container}>
       <button style={styles.backLink} onClick={onBack}>← back to explore</button>
@@ -978,10 +1057,28 @@ function ChannelPage({ channel, canViewAdult, onBack, onOpenVideo, user, onToggl
               {isFollowing ? "Following" : "Follow"}
             </button>
             <button style={styles.messageBtn} onClick={onMessage}>Message</button>
+            <button style={styles.tipBtn} onClick={onTip}>💛 Send a tip</button>
+            {channel.superfanPrice != null && (
+              <button
+                style={{ ...styles.superfanBtn, ...(isSuperfan ? styles.superfanBtnActive : {}) }}
+                onClick={onToggleSuperfan}
+              >
+                {isSuperfan ? "✓ Superfan" : `⭐ Become a Superfan — $${channel.superfanPrice.toFixed(2)}/mo`}
+              </button>
+            )}
             <button style={styles.reportLink} onClick={onReport}>Report</button>
           </>
         )}
       </div>
+
+      {tips.length > 0 && (
+        <>
+          <div style={styles.sectionLabel}>{tips.length} SUPPORTERS</div>
+          <div style={{ marginBottom: 30 }}>
+            {tips.map((t) => <TipRow key={t.id} tip={t} />)}
+          </div>
+        </>
+      )}
 
       {(channel.posts || []).length > 0 && (
         <>
@@ -1059,6 +1156,51 @@ function PollCard({ post, onVote }) {
   );
 }
 
+function TipRow({ tip }) {
+  return (
+    <div style={styles.tipRow}>
+      <div style={styles.tipTop}>
+        <span style={styles.tipFrom}>{tip.from}</span>
+        <span style={styles.tipAmount}>${tip.amount.toFixed(2)}</span>
+      </div>
+      {tip.message && <div style={styles.tipMessage}>{tip.message}</div>}
+      <div style={styles.tipTime}>{tip.time}</div>
+    </div>
+  );
+}
+
+function SuperfanPriceControl({ channel, onUpdateChannel }) {
+  const [price, setPrice] = useState(channel.superfanPrice != null ? String(channel.superfanPrice) : "");
+
+  const save = () => {
+    const n = parseFloat(price);
+    onUpdateChannel({ superfanPrice: n > 0 ? Math.round(n * 100) / 100 : null });
+  };
+
+  return (
+    <div style={styles.uploadCard}>
+      <div style={styles.fieldLabel}>SUPERFAN SUBSCRIPTION PRICE ($/month)</div>
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <input
+          style={{ ...styles.textInput, marginBottom: 0, width: 120 }}
+          type="number"
+          min="1"
+          step="0.5"
+          placeholder="e.g. 4.99"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+        />
+        <button style={styles.planBannerLink} onClick={save}>Save</button>
+      </div>
+      <div style={styles.uploadNote}>
+        {channel.superfanPrice != null
+          ? `Superfans currently pay $${channel.superfanPrice.toFixed(2)}/mo. Clear the field and save to turn this off.`
+          : "Leave blank to keep Superfan subscriptions off your channel — viewers will still be able to send one-time tips."}
+      </div>
+    </div>
+  );
+}
+
 function Dashboard({ channel, onUpload, onUpdateChannel, onOpenVideo, onGoLive, onCreatePost, onVotePoll, onSettings, onPlans }) {
   if (!channel) return null;
   const totalViews = channel.videos.reduce((s, v) => s + (v.views || 0), 0);
@@ -1067,6 +1209,9 @@ function Dashboard({ channel, onUpload, onUpdateChannel, onOpenVideo, onGoLive, 
   const channelAvgRating = totalRatingCount > 0 ? totalRatingPoints / totalRatingCount : 0;
   const totalComments = channel.videos.reduce((s, v) => s + (v.comments || []).length, 0);
   const maxViews = Math.max(1, ...channel.videos.map((v) => v.views || 0));
+  const tips = channel.tips || [];
+  const totalTips = tips.reduce((s, t) => s + t.amount, 0);
+  const superfanCount = (channel.superfans || []).length;
 
   return (
     <div style={styles.container}>
@@ -1125,7 +1270,24 @@ function Dashboard({ channel, onUpload, onUpdateChannel, onOpenVideo, onGoLive, 
           <div style={styles.statNum}>{totalComments}</div>
           <div style={styles.statLabel}>Comments</div>
         </div>
+        <div style={styles.statCard}>
+          <div style={styles.statNum}>${totalTips.toFixed(2)}</div>
+          <div style={styles.statLabel}>Tips received</div>
+        </div>
+        <div style={styles.statCard}>
+          <div style={styles.statNum}>{superfanCount}</div>
+          <div style={styles.statLabel}>Superfans</div>
+        </div>
       </div>
+
+      <div style={{ height: 30 }} />
+      <div style={styles.sectionLabel}>SUPPORT</div>
+      <SuperfanPriceControl channel={channel} onUpdateChannel={onUpdateChannel} />
+      {tips.length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          {tips.map((t) => <TipRow key={t.id} tip={t} />)}
+        </div>
+      )}
 
       {channel.videos.length > 0 && (
         <div style={{ marginTop: 22 }}>
@@ -2092,6 +2254,176 @@ function CriticUpgradeModal({ onClose, onConfirm }) {
   );
 }
 
+const TIP_PRESETS = [3, 5, 10, 25];
+
+function TipModal({ channel, onClose, onSubmit }) {
+  const [amount, setAmount] = useState(5);
+  const [customAmount, setCustomAmount] = useState("");
+  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
+
+  if (!channel) return null;
+  const finalAmount = customAmount ? parseFloat(customAmount) : amount;
+  const valid = finalAmount > 0;
+
+  const submit = () => {
+    if (!valid) return;
+    onSubmit(finalAmount, message);
+    setSent(true);
+  };
+
+  if (sent) {
+    return (
+      <div style={styles.modalOverlay} onClick={onClose}>
+        <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div style={{ ...styles.sectionLabel, textAlign: "center" }}>THANK YOU</div>
+          <p style={styles.guidelinesIntro}>
+            Your ${finalAmount.toFixed(2)} tip to {channel.name} is on its way.
+          </p>
+          <button style={{ ...styles.primaryBtn, width: "100%" }} onClick={onClose}>Done</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.modalOverlay} onClick={onClose}>
+      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div style={{ ...styles.sectionLabel, textAlign: "center" }}>SEND A TIP</div>
+        <h2 style={{ ...styles.h2, textAlign: "center" }}>Support {channel.name}</h2>
+        <div style={styles.qualityRow}>
+          {TIP_PRESETS.map((p) => (
+            <button
+              key={p}
+              style={{ ...styles.qualityBtn, ...(!customAmount && amount === p ? styles.qualityBtnActive : {}) }}
+              onClick={() => { setAmount(p); setCustomAmount(""); }}
+            >
+              ${p}
+            </button>
+          ))}
+        </div>
+        <input
+          style={styles.textInput}
+          type="number"
+          min="1"
+          step="1"
+          placeholder="Or enter a custom amount"
+          value={customAmount}
+          onChange={(e) => setCustomAmount(e.target.value)}
+        />
+        <input
+          style={styles.textInput}
+          placeholder="Add a message (optional)"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+        <div style={styles.modalNote}>
+          Demo only — no real payment is collected here. In the real app, this is a one-time
+          Stripe charge.
+        </div>
+        <button style={{ ...styles.primaryBtn, width: "100%", opacity: valid ? 1 : 0.5 }} disabled={!valid} onClick={submit}>
+          Send ${valid ? finalAmount.toFixed(2) : "0.00"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SuperfanModal({ channel, onClose, onConfirm }) {
+  if (!channel || channel.superfanPrice == null) return null;
+  return (
+    <div style={styles.modalOverlay} onClick={onClose}>
+      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div style={{ ...styles.sectionLabel, textAlign: "center" }}>BECOME A SUPERFAN</div>
+        <h2 style={{ ...styles.h2, textAlign: "center" }}>Support {channel.name} every month</h2>
+        <p style={styles.guidelinesIntro}>
+          A recurring monthly amount, set by {channel.name} — a steadier way to back a creator you
+          watch regularly than a one-off tip, and cheaper per month than most subscription plans.
+        </p>
+        <div style={styles.modalNote}>
+          Demo only — no real payment is collected here. In the real app, this is a recurring
+          Stripe subscription you can cancel anytime.
+        </div>
+        <button style={{ ...styles.primaryBtn, width: "100%" }} onClick={onConfirm}>
+          Subscribe — ${channel.superfanPrice.toFixed(2)}/mo
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PlatformSupportModal({ onClose, onSubmit }) {
+  const [amount, setAmount] = useState(10);
+  const [customAmount, setCustomAmount] = useState("");
+  const [sent, setSent] = useState(false);
+
+  const finalAmount = customAmount ? parseFloat(customAmount) : amount;
+  const valid = finalAmount > 0;
+
+  const submit = () => {
+    if (!valid) return;
+    onSubmit(finalAmount);
+    setSent(true);
+  };
+
+  if (sent) {
+    return (
+      <div style={styles.modalOverlay} onClick={onClose}>
+        <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div style={{ ...styles.sectionLabel, textAlign: "center" }}>THANK YOU</div>
+          <p style={styles.guidelinesIntro}>
+            Your ${finalAmount.toFixed(2)} donation helps keep Home Planet TV running, ad-free and
+            independent.
+          </p>
+          <button style={{ ...styles.primaryBtn, width: "100%" }} onClick={onClose}>Done</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.modalOverlay} onClick={onClose}>
+      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+          <TVMark size={44} />
+        </div>
+        <div style={{ ...styles.sectionLabel, textAlign: "center" }}>SUPPORT HOME PLANET TV</div>
+        <p style={styles.guidelinesIntro}>
+          This goes to the platform itself, not a creator — it helps cover hosting and keeps
+          Home Planet TV free of third-party ads and the compromises that come with them.
+        </p>
+        <div style={styles.qualityRow}>
+          {TIP_PRESETS.map((p) => (
+            <button
+              key={p}
+              style={{ ...styles.qualityBtn, ...(!customAmount && amount === p ? styles.qualityBtnActive : {}) }}
+              onClick={() => { setAmount(p); setCustomAmount(""); }}
+            >
+              ${p}
+            </button>
+          ))}
+        </div>
+        <input
+          style={styles.textInput}
+          type="number"
+          min="1"
+          step="1"
+          placeholder="Or enter a custom amount"
+          value={customAmount}
+          onChange={(e) => setCustomAmount(e.target.value)}
+        />
+        <div style={styles.modalNote}>
+          Demo only — no real payment is collected here. In the real app, this is a one-time
+          Stripe charge.
+        </div>
+        <button style={{ ...styles.primaryBtn, width: "100%", opacity: valid ? 1 : 0.5 }} disabled={!valid} onClick={submit}>
+          Donate ${valid ? finalAmount.toFixed(2) : "0.00"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SignupModal({ name, setName, email, setEmail, birthdate, setBirthdate, error, stage, onClose, onSubmit }) {
   if (stage === "sent") {
     return (
@@ -2243,6 +2575,16 @@ const styles = {
   messageBtn: { background: "#FFFFFF", color: "#2A2118", border: "2px solid #E3D6B8", borderRadius: 20, padding: "6px 16px", fontFamily: "'Fredoka', sans-serif", fontWeight: 600, fontSize: 13 },
   reportLink: { background: "none", border: "none", color: "#8C7F68", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, padding: "6px 4px", textDecoration: "underline" },
   followBtnActive: { background: "#FFFFFF", color: "#2A2118", border: "2px solid #E3D6B8" },
+  supportBtn: { background: "none", border: "2px solid #E8A33D", color: "#B4703A", borderRadius: 20, padding: "6px 14px", fontFamily: "'Fredoka', sans-serif", fontWeight: 600, fontSize: 13 },
+  tipBtn: { background: "#FAF1DC", color: "#B4703A", border: "2px solid #E8CE96", borderRadius: 20, padding: "6px 16px", fontFamily: "'Fredoka', sans-serif", fontWeight: 600, fontSize: 13 },
+  superfanBtn: { background: "#FFFFFF", color: "#8A6412", border: "2px solid #F0DBA4", borderRadius: 20, padding: "6px 16px", fontFamily: "'Fredoka', sans-serif", fontWeight: 600, fontSize: 13 },
+  superfanBtnActive: { background: "#F0DBA4", color: "#8A6412", border: "2px solid #F0DBA4" },
+  tipRow: { background: "#FFFFFF", border: "2px solid #E3D6B8", borderRadius: 8, padding: "10px 14px", marginBottom: 8 },
+  tipTop: { display: "flex", justifyContent: "space-between", alignItems: "center" },
+  tipFrom: { fontFamily: "'Fredoka', sans-serif", fontWeight: 600, fontSize: 13 },
+  tipAmount: { fontFamily: "'Fredoka', sans-serif", fontWeight: 700, fontSize: 14, color: "#B4703A" },
+  tipMessage: { fontSize: 13, color: "#2A2118", marginTop: 4 },
+  tipTime: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#8C7F68", marginTop: 4 },
 
   bellBtn: { background: "none", border: "none", fontSize: 18, padding: "4px 2px", lineHeight: 1 },
   bellBadge: { position: "absolute", top: -3, right: -4, background: "#E8483B", color: "#F5EEDD", fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: 500, borderRadius: "50%", width: 16, height: 16, display: "flex", alignItems: "center", justifyContent: "center" },
@@ -2362,7 +2704,7 @@ const styles = {
   planBannerLink: { marginLeft: "auto", background: "none", border: "none", color: "#B4703A", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, textDecoration: "underline", padding: "6px 2px" },
   qualityRow: { display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" },
   qualityBtn: { background: "#FFFFFF", border: "2px solid #E3D6B8", borderRadius: 8, padding: "8px 14px", fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#2A2118" },
-  qualityBtnActive: { background: "#2A2118", borderColor: "#2A2118", color: "#F5EEDD" },
+  qualityBtnActive: { background: "#2A2118", border: "2px solid #2A2118", color: "#F5EEDD" },
   qualityBtnLocked: { color: "#8C7F68", opacity: 0.7 },
   trimRow: { display: "flex", alignItems: "center", gap: 10, marginBottom: 8 },
   trimTime: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#8C7F68", width: 44, flexShrink: 0 },
