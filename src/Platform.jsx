@@ -2043,6 +2043,7 @@ function Guidelines() {
       </p>
       {[
         ["Child sexual abuse material", "Detected automatically before publish, and reported where legally required. No exceptions, no appeals."],
+        ["Sexually explicit content", "Home Planet TV doesn't host pornography or content depicting sex acts, regardless of the 18+ flag. This may change in the future as a separate, age-verified offering — it isn't part of the platform today."],
         ["Terrorism and violent extremism content", "Material that recruits for or instructs violent extremist activity."],
         ["Direct incitement to imminent violence", "Specific calls to harm a specific person or group, right now — not commentary, criticism, or strong opinion."],
         ["Copyright infringement", "Handled through a standard takedown request process, not by us pre-screening your uploads."],
@@ -2053,15 +2054,17 @@ function Guidelines() {
         </div>
       ))}
       <p style={styles.guidelinesIntro}>
-        Opinions, criticism, satire, controversial takes, adult topics discussed openly — all of
+        Opinions, criticism, satire, controversial takes, mature themes discussed openly — all of
         that is yours to post. No demonetization for unpopular views, no shadow limits on reach.
       </p>
       <div style={styles.guidelineRow}>
         <div style={styles.guidelineTitle}>Age requirements</div>
         <div style={styles.guidelineDesc}>
-          You must be 13 or older to create a channel. Content flagged 18+ is hidden from
-          anyone not signed in as an adult account — self-reported at signup, the same way most
-          platforms handle it.
+          You must be 13 or older to create a channel. The 18+ flag is for mature themes — strong
+          language, frightening or intense content, adult topics discussed in words — not for
+          sexually explicit material, which isn't allowed at any age. Flagged content is hidden
+          from anyone not signed in as an adult account — self-reported at signup, the same way
+          most platforms handle it.
         </div>
       </div>
     </div>

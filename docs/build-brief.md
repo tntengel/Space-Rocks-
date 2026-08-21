@@ -15,13 +15,13 @@ backend and deploy it.
 - **CSAM detection:** Microsoft PhotoDNA (pending application approval) — wire
   into the upload pipeline once approved
 - **General explicit-content detection:** a real content-classification API
-  (e.g. AWS Rekognition, Google Vision SafeSearch, or Hive Moderation) —
-  PhotoDNA only catches *known* CSAM, not new explicit content
+  (e.g. AWS Rekognition, Google Vision SafeSearch, or Hive Moderation) to
+  catch and reject sexually explicit uploads before publish — see the content
+  policy decision below; this classifier enforces a ban, it doesn't gate an
+  allowed category
 - **Copyright:** DMCA agent info to be added to a public footer/page once registered
-- **Payments (creator plans, Verified Critic subscription):** Stripe, plus an
-  adult-content-capable processor (e.g. CCBill/Segpay) if the content-policy
-  question below lands on "explicit content allowed if flagged 18+" — Stripe
-  alone does not support that category
+- **Payments (creator plans, Verified Critic subscription):** Stripe. No
+  adult-content-capable processor (CCBill/Segpay) is needed — see below.
 
 ## Data model
 
@@ -101,22 +101,31 @@ real uploads instead of a client-side probe.
       the browser's anon key can't delete an `auth.users` row)
 - [x] Mission page (static content)
 - [x] Pricing page (static content, reachable without signing in)
-- [x] Guidelines page (static content — **content pending the policy
-      question below**)
+- [x] Guidelines page (static content)
 
-## Not yet decided — needs your call before it's built on
+## Content policy — decided
 
-**Content policy: is explicit sexual content banned outright, or allowed if
-flagged 18+?** This isn't a detail — it changes:
-- The Guidelines page copy (currently written assuming "18+ flagged content
-  allowed", which may not be the answer you want)
-- What the Terms of Service / Privacy Policy need to say
-- Which payment processor setup is required — Stripe alone if content is
-  banned; Stripe *and* an adult-content-capable processor (CCBill/Segpay) if
-  explicit content is allowed, since Stripe's terms prohibit that category
+**No sexually explicit content, at any age or tier.** The 18+ flag on a video
+gates mature themes (strong language, intense/frightening content, adult
+topics discussed in words) — not depictions of sex acts, which aren't allowed
+on the platform at all. This keeps things simple for the soft launch: Stripe
+alone covers payments (creator plans + the Verified Critic subscription),
+there's no separate adult-content payment processor to integrate, and the
+Guidelines/ToS/Privacy Policy can all be written against one clear line.
 
-Flagging this rather than picking one — it's a call about what the platform
-actually is, not an implementation detail.
+`src/Platform.jsx`'s `Guidelines()` component and the age-requirements copy
+reflect this decision.
+
+**Possible future addition, explicitly out of scope for v1:** a fourth,
+higher-priced, real-ID-verified plan tier that allows explicit content. Two
+things worth remembering if that comes back: (1) price alone is not
+age verification — a real ID/age-verification vendor would be required
+regardless of the tier's cost, since a growing number of US states now
+require ID-based verification for adult content by law, and (2) it would
+need the adult-content-capable payment processor (CCBill/Segpay) that this
+v1 deliberately avoids. Architecturally this is a small addition when it
+happens — `channels.plan` is a plain text column (`supabase/migrations/
+0002_creator_features.sql`), so a fourth value is not a schema rewrite.
 
 ## Build order
 
@@ -129,14 +138,14 @@ actually is, not an implementation detail.
 3. **Cloudflare Stream Live**, if real live streaming is in scope for v1.
 4. **Moderation pipeline**: PhotoDNA + a general explicit-content classifier,
    inserted between upload and publish (`videos.moderation_status` stays
-   `pending` until both pass).
+   `pending` until both pass; the classifier's job is to catch and reject
+   sexually explicit uploads, per the content policy above).
 5. **Wire the rest of the UI to real data**: swap `Platform.jsx`'s remaining
    mock state (feed, posts, messages, ratings UI, plan changes, support
    requests) for Supabase queries — component structure/styling carries over
    directly.
-6. **Payments**: resolve the content-policy question first, then integrate
-   Stripe (and CCBill/Segpay if needed) for plan tiers and the Verified
-   Critic subscription.
+6. **Payments**: integrate Stripe for plan tiers and the Verified Critic
+   subscription.
 7. **Account deletion**: a Supabase Edge Function with the service role key,
    since the anon key the browser uses can't delete an `auth.users` row.
 8. **Deploy to Vercel**, connect a domain, set env vars.
