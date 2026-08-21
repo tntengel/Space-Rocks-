@@ -1,4 +1,4 @@
--- World Home Video — initial schema
+-- Home Planet TV — initial schema
 -- Tables, RLS policies, and triggers implementing the data model in
 -- docs/build-brief.md.
 
@@ -127,7 +127,7 @@ begin
   values (new.id, v_name, v_handle, new.email, v_birthdate, v_age >= 18);
 
   insert into public.channels (owner_user_id, name, handle, tagline)
-  values (new.id, v_name, v_handle, 'New voice on World Home Video')
+  values (new.id, v_name, v_handle, 'New voice on Home Planet TV')
   returning id into v_channel_id;
 
   update public.users set channel_id = v_channel_id where id = new.id;
