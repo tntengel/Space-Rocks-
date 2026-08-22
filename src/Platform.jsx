@@ -25,10 +25,10 @@ const seedChannels = [
       ], voted: null, time: "2 days ago" },
     ],
     videos: [
-      { id: "v1", title: "Late-night jollof stalls near Osu", views: 12000, time: "2 days ago", durationSec: 312, filter: "none", avgRating: 4.6, ratingCount: 340, criticAvgRating: 4.7, criticRatingCount: 12, myRating: null, lightCount: 289, darkCount: 14, myReaction: null, comments: [
+      { id: "v1", title: "Late-night jollof stalls near Osu", views: 12000, time: "2 days ago", durationSec: 312, filter: "none", avgRating: 4.6, ratingCount: 340, criticAvgRating: 4.7, criticRatingCount: 12, myRating: null, starCount: 230, planetCount: 60, blackholeCount: 13, myReaction: null, comments: [
         { id: "cm1", author: "@rosam", text: "This looks incredible, need to try this spot!", time: "1 day ago" },
       ] },
-      { id: "v2", title: "What $5 buys at Makola Market", views: 34000, time: "1 week ago", durationSec: 540, filter: "none", avgRating: 4.8, ratingCount: 812, criticAvgRating: 4.9, criticRatingCount: 26, myRating: null, lightCount: 701, darkCount: 22, myReaction: null, comments: [] },
+      { id: "v2", title: "What $5 buys at Makola Market", views: 34000, time: "1 week ago", durationSec: 540, filter: "none", avgRating: 4.8, ratingCount: 812, criticAvgRating: 4.9, criticRatingCount: 26, myRating: null, starCount: 610, planetCount: 91, blackholeCount: 22, myReaction: null, comments: [] },
     ],
   },
   {
@@ -45,7 +45,7 @@ const seedChannels = [
     tips: [],
     posts: [],
     videos: [
-      { id: "v3", title: "Why nobody covers this story", views: 8100, time: "5 hours ago", durationSec: 480, filter: "none", avgRating: 3.9, ratingCount: 156, criticAvgRating: 0, criticRatingCount: 0, myRating: null, lightCount: 61, darkCount: 88, myReaction: null, comments: [
+      { id: "v3", title: "Why nobody covers this story", views: 8100, time: "5 hours ago", durationSec: 480, filter: "none", avgRating: 3.9, ratingCount: 156, criticAvgRating: 0, criticRatingCount: 0, myRating: null, starCount: 20, planetCount: 41, blackholeCount: 88, myReaction: null, comments: [
         { id: "cm2", author: "@amara", text: "Finally someone said it.", time: "3 hours ago" },
       ] },
     ],
@@ -67,11 +67,11 @@ const seedChannels = [
     ],
     posts: [],
     videos: [
-      { id: "v4", title: "Fixing a leaking tap in 4 minutes", views: 91000, time: "3 weeks ago", durationSec: 258, filter: "none", avgRating: 4.9, ratingCount: 2100, criticAvgRating: 4.6, criticRatingCount: 34, myRating: null, lightCount: 1840, darkCount: 51, myReaction: null, comments: [
+      { id: "v4", title: "Fixing a leaking tap in 4 minutes", views: 91000, time: "3 weeks ago", durationSec: 258, filter: "none", avgRating: 4.9, ratingCount: 2100, criticAvgRating: 4.6, criticRatingCount: 34, myRating: null, starCount: 1690, planetCount: 150, blackholeCount: 51, myReaction: null, comments: [
         { id: "cm3", author: "@devnair", text: "Saved me a call-out fee, thank you!", time: "2 weeks ago" },
         { id: "cm4", author: "@amara", text: "Glad it helped!", time: "2 weeks ago" },
       ] },
-      { id: "v5", title: "Tools I actually use", views: 22000, time: "1 month ago", durationSec: 645, filter: "none", avgRating: 4.4, ratingCount: 430, criticAvgRating: 0, criticRatingCount: 0, myRating: null, lightCount: 402, darkCount: 19, myReaction: null, comments: [] },
+      { id: "v5", title: "Tools I actually use", views: 22000, time: "1 month ago", durationSec: 645, filter: "none", avgRating: 4.4, ratingCount: 430, criticAvgRating: 0, criticRatingCount: 0, myRating: null, starCount: 340, planetCount: 62, blackholeCount: 19, myReaction: null, comments: [] },
     ],
   },
 ];
@@ -98,6 +98,10 @@ const QUALITY_OPTIONS = [
 ];
 
 const VIEWER_SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+
+// A video's tone: Star (bright), Planet (in-between), Black Hole (dark) —
+// mutually exclusive per viewer, like/dislike's bolder cousin.
+const TONE_COUNT_FIELD = { star: "starCount", planet: "planetCount", blackhole: "blackholeCount" };
 
 function formatDuration(sec) {
   if (!sec || sec <= 0) return "0:00";
@@ -138,34 +142,34 @@ function HeartRow({ value, color, size = 14, gap = 2 }) {
   );
 }
 
-function SunIcon({ filled, color, size = 20 }) {
+function StarIcon({ filled, color, size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}>
-      <circle cx="12" cy="12" r="5" fill={filled ? color : "none"} stroke={color} strokeWidth="1.6" />
-      {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
-        <line
-          key={deg}
-          x1="12" y1="3" x2="12" y2="5.5"
-          stroke={color}
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          transform={`rotate(${deg} 12 12)`}
-        />
-      ))}
+      <path
+        d="M12 2 L14.59 8.36 L21.51 9.27 L16.26 13.97 L17.77 20.78 L12 17.27 L6.23 20.78 L7.74 13.97 L2.49 9.27 L9.41 8.36 Z"
+        fill={filled ? color : "none"}
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
-function MoonIcon({ filled, color, size = 20 }) {
+function PlanetIcon({ filled, color, size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}>
-      <path
-        d="M20 14.5c-1.1 0.4-2.3 0.6-3.5 0.6-5 0-9-4-9-9 0-1.2 0.2-2.4 0.6-3.5C4.4 3.9 2 7.4 2 11.5 2 16.75 6.25 21 11.5 21c4.1 0 7.6-2.4 8.9-5.9-0.13 0-0.27-0.02-0.4-0.02z"
-        fill={filled ? color : "none"}
-        stroke={color}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
+      <ellipse cx="12" cy="13" rx="9.5" ry="3.2" fill="none" stroke={color} strokeWidth="1.4" transform="rotate(-15 12 13)" />
+      <circle cx="12" cy="11.5" r="5" fill={filled ? color : "none"} stroke={color} strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function BlackHoleIcon({ filled, color, size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}>
+      <ellipse cx="12" cy="12" rx="10.5" ry="4" fill="none" stroke={color} strokeWidth="1.4" transform="rotate(-8 12 12)" />
+      <circle cx="12" cy="12" r="5" fill={filled ? color : "none"} stroke={color} strokeWidth="1.6" />
     </svg>
   );
 }
@@ -539,7 +543,7 @@ export default function Platform() {
     );
   };
 
-  const setLightDark = (channelId, videoId, choice) => {
+  const setTone = (channelId, videoId, choice) => {
     if (!user) return;
     setChannels((cs) =>
       cs.map((c) =>
@@ -549,20 +553,21 @@ export default function Platform() {
               ...c,
               videos: c.videos.map((v) => {
                 if (v.id !== videoId) return v;
-                const lightCount = v.lightCount || 0;
-                const darkCount = v.darkCount || 0;
-                if (v.myReaction === choice) {
-                  // clicking the already-selected side again clears it
-                  return { ...v, myReaction: null, lightCount: choice === "light" ? lightCount - 1 : lightCount, darkCount: choice === "dark" ? darkCount - 1 : darkCount };
+                const next = { ...v };
+                // clear whatever this viewer had previously picked, if anything
+                if (v.myReaction) {
+                  const prevField = TONE_COUNT_FIELD[v.myReaction];
+                  next[prevField] = (next[prevField] || 0) - 1;
                 }
-                const clearedLight = v.myReaction === "light" ? lightCount - 1 : lightCount;
-                const clearedDark = v.myReaction === "dark" ? darkCount - 1 : darkCount;
-                return {
-                  ...v,
-                  myReaction: choice,
-                  lightCount: choice === "light" ? clearedLight + 1 : clearedLight,
-                  darkCount: choice === "dark" ? clearedDark + 1 : clearedDark,
-                };
+                if (v.myReaction === choice) {
+                  // clicking the already-selected option again clears it
+                  next.myReaction = null;
+                } else {
+                  next.myReaction = choice;
+                  const field = TONE_COUNT_FIELD[choice];
+                  next[field] = (next[field] || 0) + 1;
+                }
+                return next;
               }),
             }
       )
@@ -765,7 +770,7 @@ export default function Platform() {
           onBack={() => setView("feed")}
           onOpenChannel={() => setView("channel")}
           onRate={(rating) => rateVideo(activeChannel.id, activeVideo.id, rating)}
-          onSetLightDark={(choice) => setLightDark(activeChannel.id, activeVideo.id, choice)}
+          onSetTone={(choice) => setTone(activeChannel.id, activeVideo.id, choice)}
           onAddComment={(text) => addComment(activeChannel.id, activeVideo.id, text)}
           onNeedSignup={() => setShowSignup(true)}
           onWantCritic={() => setShowCriticUpgrade(true)}
@@ -825,7 +830,7 @@ export default function Platform() {
             setChannels((cs) =>
               cs.map((c) =>
                 c.id === user.channelId
-                  ? { ...c, videos: [{ ...video, views: 0, time: "just now", avgRating: 0, ratingCount: 0, criticAvgRating: 0, criticRatingCount: 0, myRating: null, lightCount: 0, darkCount: 0, myReaction: null, comments: [] }, ...c.videos] }
+                  ? { ...c, videos: [{ ...video, views: 0, time: "just now", avgRating: 0, ratingCount: 0, criticAvgRating: 0, criticRatingCount: 0, myRating: null, starCount: 0, planetCount: 0, blackholeCount: 0, myReaction: null, comments: [] }, ...c.videos] }
                   : c
               )
             );
@@ -1188,10 +1193,11 @@ function VideoCard({ video, channelHandle, showComments, onClick }) {
         </div>
       )}
 
-      {((video.lightCount || 0) + (video.darkCount || 0)) > 0 && (
+      {((video.starCount || 0) + (video.planetCount || 0) + (video.blackholeCount || 0)) > 0 && (
         <div style={styles.cardLightDarkRow}>
-          <SunIcon filled color="#E8A33D" size={13} /> <span>{formatCount(video.lightCount)}</span>
-          <MoonIcon filled color="#1F4C5C" size={13} /> <span>{formatCount(video.darkCount)}</span>
+          <StarIcon filled color="#E8A33D" size={13} /> <span>{formatCount(video.starCount)}</span>
+          <PlanetIcon filled color="#8C7F68" size={13} /> <span>{formatCount(video.planetCount)}</span>
+          <BlackHoleIcon filled color="#2A2118" size={13} /> <span>{formatCount(video.blackholeCount)}</span>
         </div>
       )}
 
@@ -1585,7 +1591,7 @@ function GoLive({ channel, onEnd }) {
   );
 }
 
-function WatchPage({ channel, video, user, canViewAdult, onBack, onOpenChannel, onRate, onSetLightDark, onAddComment, onNeedSignup, onWantCritic, onReport }) {
+function WatchPage({ channel, video, user, canViewAdult, onBack, onOpenChannel, onRate, onSetTone, onAddComment, onNeedSignup, onWantCritic, onReport }) {
   const [commentText, setCommentText] = useState("");
   const [viewerSpeed, setViewerSpeed] = useState(1);
   const videoRef = useRef(null);
@@ -1749,24 +1755,32 @@ function WatchPage({ channel, video, user, canViewAdult, onBack, onOpenChannel, 
           </div>
 
           <div style={{ height: 16 }} />
-          <div style={styles.lightDarkBlock}>
-            <div style={styles.ratingRowLabel}>LIGHT OR DARK?</div>
-            <div style={styles.lightDarkRow}>
+          <div style={styles.toneBlock}>
+            <div style={styles.ratingRowLabel}>STAR, PLANET, OR BLACK HOLE?</div>
+            <div style={styles.toneRow}>
               <button
-                style={{ ...styles.lightBtn, ...(video.myReaction === "light" ? styles.lightBtnActive : {}) }}
-                onClick={() => (user ? onSetLightDark("light") : onNeedSignup())}
+                style={{ ...styles.starBtn, ...(video.myReaction === "star" ? styles.starBtnActive : {}) }}
+                onClick={() => (user ? onSetTone("star") : onNeedSignup())}
               >
-                <SunIcon filled={video.myReaction === "light"} color="#E8A33D" size={22} />
-                Light · {formatCount(video.lightCount)}
+                <StarIcon filled={video.myReaction === "star"} color="#E8A33D" size={22} />
+                Star · {formatCount(video.starCount)}
               </button>
               <button
-                style={{ ...styles.darkBtn, ...(video.myReaction === "dark" ? styles.darkBtnActive : {}) }}
-                onClick={() => (user ? onSetLightDark("dark") : onNeedSignup())}
+                style={{ ...styles.planetBtn, ...(video.myReaction === "planet" ? styles.planetBtnActive : {}) }}
+                onClick={() => (user ? onSetTone("planet") : onNeedSignup())}
               >
-                <MoonIcon filled={video.myReaction === "dark"} color="#F5EEDD" size={22} />
-                Dark · {formatCount(video.darkCount)}
+                <PlanetIcon filled={video.myReaction === "planet"} color="#5C5140" size={22} />
+                Planet · {formatCount(video.planetCount)}
+              </button>
+              <button
+                style={{ ...styles.blackholeBtn, ...(video.myReaction === "blackhole" ? styles.blackholeBtnActive : {}) }}
+                onClick={() => (user ? onSetTone("blackhole") : onNeedSignup())}
+              >
+                <BlackHoleIcon filled={video.myReaction === "blackhole"} color="#F5EEDD" size={22} />
+                Black Hole · {formatCount(video.blackholeCount)}
               </button>
             </div>
+            <div style={styles.toneCaption}>Bright and uplifting, somewhere in between, or pulls you into something heavy.</div>
           </div>
 
           <div style={{ height: 16 }} />
@@ -2722,12 +2736,15 @@ const styles = {
   criticBadgeSmall: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.05em", color: "#8A6412", background: "#F0DBA4", borderRadius: 4, padding: "1px 5px", marginLeft: 6 },
   criticUpsellLink: { display: "block", marginTop: 12, background: "none", border: "none", color: "#B4703A", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, textDecoration: "underline", padding: "6px 0", textAlign: "left" },
   cardLightDarkRow: { display: "flex", alignItems: "center", gap: 5, marginBottom: 3, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#8C7F68" },
-  lightDarkBlock: { background: "linear-gradient(135deg, #FAF1DC, #1F2E38)", borderRadius: 10, padding: "16px 18px" },
-  lightDarkRow: { display: "flex", gap: 10 },
-  lightBtn: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#FFFFFF", border: "2px solid #E3D6B8", borderRadius: 24, padding: "10px 16px", fontFamily: "'Fredoka', sans-serif", fontWeight: 600, fontSize: 14, color: "#5C5140" },
-  lightBtnActive: { background: "#F5EEDD", border: "2px solid #E8A33D", color: "#B4703A" },
-  darkBtn: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#2A2118", border: "2px solid #2A2118", borderRadius: 24, padding: "10px 16px", fontFamily: "'Fredoka', sans-serif", fontWeight: 600, fontSize: 14, color: "#C9BFA8" },
-  darkBtnActive: { background: "#0F2E38", border: "2px solid #1F4C5C", color: "#F5EEDD" },
+  toneBlock: { background: "linear-gradient(135deg, #FAF1DC, #8C7F68 52%, #1F2E38)", borderRadius: 10, padding: "16px 18px" },
+  toneRow: { display: "flex", gap: 10, flexWrap: "wrap" },
+  starBtn: { flex: 1, minWidth: 120, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#FFFFFF", border: "2px solid #E3D6B8", borderRadius: 24, padding: "10px 14px", fontFamily: "'Fredoka', sans-serif", fontWeight: 600, fontSize: 13, color: "#5C5140" },
+  starBtnActive: { background: "#F5EEDD", border: "2px solid #E8A33D", color: "#B4703A" },
+  planetBtn: { flex: 1, minWidth: 120, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#8C7F68", border: "2px solid #8C7F68", borderRadius: 24, padding: "10px 14px", fontFamily: "'Fredoka', sans-serif", fontWeight: 600, fontSize: 13, color: "#F5EEDD" },
+  planetBtnActive: { background: "#5C5140", border: "2px solid #5C5140", color: "#FFFFFF" },
+  blackholeBtn: { flex: 1, minWidth: 120, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#2A2118", border: "2px solid #2A2118", borderRadius: 24, padding: "10px 14px", fontFamily: "'Fredoka', sans-serif", fontWeight: 600, fontSize: 13, color: "#C9BFA8" },
+  blackholeBtnActive: { background: "#0F2E38", border: "2px solid #1F4C5C", color: "#F5EEDD" },
+  toneCaption: { display: "inline-block", marginTop: 10, background: "rgba(245,238,221,0.9)", borderRadius: 6, padding: "4px 10px", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#5C5140" },
   commentInputRow: { display: "flex", gap: 10, alignItems: "center", marginBottom: 20, flexWrap: "wrap" },
   commentRow: { borderTop: "1px solid #E3D6B8", padding: "12px 0" },
   commentAuthor: { fontFamily: "'Fredoka', sans-serif", fontWeight: 600, fontSize: 13, marginBottom: 2 },

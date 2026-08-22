@@ -70,14 +70,16 @@ are what a *viewer* pays a creator directly):
   "Support Home Planet TV" button; not tied to a channel, kept private to
   the donor (no public leaderboard)
 
-**0004_light_dark_reactions.sql** — "Light or Dark?": a bolder, binary
-alternative to the 5-heart rating, mutually exclusive per user (like/dislike
-but themed, not a religious-imagery version that was considered and dropped
-for the obvious reasons):
-- `videos.light_count` / `dark_count`
-- **video_reactions** table (video_id, user_id, reaction: 'light'|'dark'),
-  unique per (video, user) — switching sides is an update, clearing is a
-  delete, both handled by a trigger that recomputes the video's counts
+**0004_tone_reactions.sql** — "Star, Planet, or Black Hole?": a bolder,
+three-way alternative to the 5-heart rating (bright / mid / dark),
+mutually exclusive per user — evolved from an earlier two-way (light/dark)
+design, itself evolved from a religious-imagery version that was considered
+and dropped:
+- `videos.star_count` / `planet_count` / `blackhole_count`
+- **video_reactions** table (video_id, user_id, reaction:
+  'star'|'planet'|'blackhole'), unique per (video, user) — switching is an
+  update, clearing is a delete, both handled by a trigger that recomputes
+  the video's counts
 
 All new tables have RLS enabled with policies matching the existing pattern:
 public read where the prototype shows the data to everyone (ratings, posts),
@@ -114,8 +116,8 @@ real uploads instead of a client-side probe.
 - [ ] Feed (For You / Following tabs), search — UI wired, reads mock data
 - [ ] Channel pages: Follow/Following, Message, Report, public plan badge
 - [ ] Watch page: real playback with trim/filter/speed applied, 5-heart
-      rating + separate Verified Critic score, a binary Light/Dark
-      reaction, comments, Report
+      rating + separate Verified Critic score, a Star/Planet/Black Hole
+      tone reaction, comments, Report
 - [ ] Direct messages (conversation list + threads)
 - [ ] Live streaming — currently a local-camera-only demo; needs Cloudflare
       Stream Live for real multi-viewer broadcast
@@ -165,7 +167,7 @@ happens — `channels.plan` is a plain text column (`supabase/migrations/
 
 1. **Supabase project**: create a project, run `0001_init_schema.sql`,
    `0002_creator_features.sql`, `0003_support_and_tips.sql`, then
-   `0004_light_dark_reactions.sql`, in order. Copy `.env.example` to `.env`
+   `0004_tone_reactions.sql`, in order. Copy `.env.example` to `.env`
    with the project URL + anon key.
 2. **Cloudflare Stream integration** (upload, storage, playback) — real trim
    enforcement and real quality tiers happen here, not just client-side.
